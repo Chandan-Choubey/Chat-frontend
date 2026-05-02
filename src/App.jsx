@@ -3,7 +3,7 @@ import { Lock, LogOut, Send, ShieldCheck, UserRound, UsersRound } from 'lucide-r
 import { io } from 'socket.io-client';
 import { createAccessProof, decryptMessage, deriveMessageKey, encryptMessage } from './crypto.js';
 import React from 'react';
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/$/, '');
+const API_URL = (import.meta.env.VITE_API_URL || 'https://chat-backend-uvq7.onrender.com').replace(/\/$/, '');
 const MESSAGE_MAX_LENGTH = 1200;
 
 export default function App() {
