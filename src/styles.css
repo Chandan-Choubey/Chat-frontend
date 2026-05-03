@@ -409,6 +409,10 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
+  body {
+    background: var(--surface);
+  }
+
   .app-shell {
     width: 100%;
     min-height: 100dvh;
@@ -416,9 +420,12 @@ button:disabled {
     grid-template-columns: 1fr;
     border: 0;
     border-radius: 0;
+    box-shadow: none;
   }
 
   .room-panel {
+    gap: 16px;
+    padding: 16px;
     border-right: 0;
     border-bottom: 1px solid var(--border);
   }
@@ -427,7 +434,92 @@ button:disabled {
     min-height: 68dvh;
   }
 
+  .chat-header {
+    min-height: 64px;
+    padding: 12px 14px;
+  }
+
+  .messages {
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
   .message {
-    width: min(92%, 560px);
+    width: min(94%, 560px);
+    padding: 10px 12px;
+  }
+
+  input,
+  textarea {
+    font-size: 16px;
+  }
+
+  textarea {
+    min-height: 48px;
+    max-height: 104px;
+    resize: none;
+  }
+
+  .composer-block {
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .composer {
+    grid-template-columns: minmax(0, 1fr) 46px;
+    gap: 8px;
+  }
+
+  .send-button {
+    width: 46px;
+    height: 48px;
+  }
+
+  .app-shell.is-joined {
+    height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .app-shell.is-joined .room-panel {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .app-shell.is-joined .brand-row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .app-shell.is-joined .brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-shell.is-joined h1 {
+    font-size: 1rem;
+  }
+
+  .app-shell.is-joined .room-meta,
+  .app-shell.is-joined .participants-block {
+    display: none;
+  }
+
+  .app-shell.is-joined .session-panel {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .app-shell.is-joined .expiry {
+    display: none;
+  }
+
+  .app-shell.is-joined .secondary-button {
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .app-shell.is-joined .chat-panel {
+    min-height: 0;
   }
 }
