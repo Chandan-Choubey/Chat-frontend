@@ -2,12 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Lock, LogOut, Send, ShieldCheck, UserRound, UsersRound } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { createAccessProof, decryptMessage, deriveMessageKey, encryptMessage } from './crypto.js';
+import {
+  registerPushNotifications,
+  requestNotificationPermission,
+  showLocalNotification,
+  unregisterPushNotifications
+} from './push-notifications.js';
 import React from 'react';
 const API_URL = (import.meta.env.VITE_API_URL || 'https://chat-backend-uvq7.onrender.com').replace(/\/$/, '');
 const MESSAGE_MAX_LENGTH = 1200;
 const SESSION_STORAGE_PREFIX = 'secure-two-person-chat:v1:session';
 const PERSISTED_MESSAGE_LIMIT = 200;
-const NOTIFICATION_BODY = 'you win an iphone';
 
 export default function App() {
   const roomId = useMemo(getRoomIdFromPath, []);
@@ -31,6 +36,7 @@ export default function App() {
   const messageListRef = useRef(null);
   const composerInputRef = useRef(null);
   const messagesRef = useRef([]);
+  const pushTokenRef = useRef('');
   const refreshingLoginRef = useRef(false);
 
   const joined = Boolean(token);
@@ -211,6 +217,28 @@ export default function App() {
 
   useEffect(() => {
     if (!token) {
+      pushTokenRef.current = '';
+      return undefined;
+    }
+
+    let cancelled = false;
+    registerPushNotifications({ apiUrl: API_URL, authToken: token, roomId })
+      .then((pushToken) => {
+        if (!cancelled && pushToken) {
+          pushTokenRef.current = pushToken;
+        }
+      })
+      .catch(() => {
+        pushTokenRef.current = '';
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roomId, token]);
+
+  useEffect(() => {
+    if (!token) {
       return undefined;
     }
 
@@ -261,8 +289,8 @@ export default function App() {
     socket.on('message:new', async (payload) => {
       const decryptedMessage = await decryptIncomingMessage(payload);
       setMessages((current) => [...current, decryptedMessage]);
-      if (payload.senderId !== selfIdRef.current) {
-        showIncomingMessageNotification(payload.senderName);
+      if (payload.senderId !== selfIdRef.current && !pushTokenRef.current) {
+        void showLocalNotification(payload.senderName);
       }
     });
 
@@ -383,11 +411,23 @@ export default function App() {
   }
 
   function leaveRoom() {
+    const currentToken = token;
+    const currentPushToken = pushTokenRef.current;
+    if (currentToken && currentPushToken) {
+      void unregisterPushNotifications({
+        apiUrl: API_URL,
+        authToken: currentToken,
+        roomId,
+        pushToken: currentPushToken
+      });
+    }
+
     clearPersistedSession(roomId);
     socketRef.current?.disconnect();
     socketRef.current = null;
     cryptoKeyRef.current = null;
     selfIdRef.current = '';
+    pushTokenRef.current = '';
     window.clearTimeout(typingClearTimeoutRef.current);
     window.clearTimeout(typingIdleTimeoutRef.current);
     setToken('');
@@ -584,34 +624,6 @@ async function requestRoomSession({ roomId, displayName, passphrase }) {
   }
 
   return data;
-}
-
-async function requestNotificationPermission() {
-  if (!('Notification' in window) || Notification.permission !== 'default') {
-    return;
-  }
-
-  try {
-    await Notification.requestPermission();
-  } catch {
-    // Some mobile browsers expose Notification but reject permission prompts.
-  }
-}
-
-function showIncomingMessageNotification(senderName) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return;
-  }
-
-  try {
-    new Notification(senderName ? `${senderName} sent a message` : 'New message', {
-      body: NOTIFICATION_BODY,
-      tag: 'secure-chat-message',
-      renotify: true
-    });
-  } catch {
-    // Browser notifications are best-effort and unavailable in some contexts.
-  }
 }
 
 function readPersistedSession(roomId) {
